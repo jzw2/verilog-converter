@@ -22,7 +22,7 @@ loop do
 	equation = gets.gsub("+", "|").gsub("*", "&")
 
 	variables = equation.scan /\w/
-	variables = variables.uniq
+	variables = variables.uniq.sort
 	puts variables.join(" | ")
 
 	gen = generate_var_set(variables)
