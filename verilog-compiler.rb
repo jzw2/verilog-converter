@@ -1,34 +1,52 @@
 
+class Circuit
+  attr_reader :func
+
+  # func is string representation for the function
+  def initialize(func)
+    @func = func
+  end
 
 
-def generate_var_set(vars)
-	(0...2 **vars.length).map do |x|
-		
-		bool_vals = x.to_s(2).chars.map {|c| c == '1' ? "true" : "false"}
-		bool_vals =   ["false"] * (vars.length - bool_vals.length)+ bool_vals
-		vars.zip(bool_vals)
-	end
-end
+  def vars
+    @vars ||= func.scan(/\w/).uniq.sort
+  end
 
-def eval_var_set(var_set, func) 
-	var_declares = var_set.map do |vars|
-		vars.map {|var, bool| "#{var} = #{bool}"}.join "\n"
-	end
-#	p var_declares
+  #matrix of all combinations of the boolean inputs
+  def input_matrix
+    (0...2 **vars.length).map do |x|
+      
+      bool_vals = x.to_s(2).chars.map {|c| c == '1' }
+      bool_vals =   [false] * (vars.length - bool_vals.length)+ bool_vals #need to pad the beginning
+      bool_vals
+    end
+  end
 
-	var_declares.map {|declares| eval(declares + "\n" + func)}
+  # array of the out puts corresponding to the input matrix
+  def outputs
+    var_declares = input_matrix.map do |row|
+      vars.zip(row).map {|var, bool| "#{var} = #{bool}"}.join "\n"
+    end
+  #	p var_declares
+
+    var_declares.map {|declares| eval(declares + "\n" + func)}
+  end
+
+  def boolean_matrix
+    input_matrix.zip(outputs).map {|row, ans| row + [ans]}
+  end
+
+
 end
 loop do
 	equation = gets.gsub("+", "|").gsub("*", "&")
 
-	variables = equation.scan /\w/
-	variables = variables.uniq.sort
-	puts variables.join(" | ")
-
-	gen = generate_var_set(variables)
-	evalued = eval_var_set(gen, equation)
-	gen.zip(evalued).each do |gen_val, ans|
-		puts (gen_val.map {|x| x.last == "true" ? 1 : 0} + [ans ? 1 : 0]).join(" | ") 
-	end
+  circ = Circuit.new equation
+  p circ.boolean_matrix
+  puts circ.vars.join(" | ")
+  circ.boolean_matrix.each do |row|
+    puts row.map {|x| x ? 1 : 0}.join " | "
+  end
 
 end
+
