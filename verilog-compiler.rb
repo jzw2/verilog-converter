@@ -1,10 +1,9 @@
 
 class Circuit
   attr_reader :func
-
   # func is string representation for the function
   def initialize(func)
-    @func = func
+    @func = func.gsub("+", "|").gsub("*", "&")
   end
 
 
@@ -36,17 +35,44 @@ class Circuit
     input_matrix.zip(outputs).map {|row, ans| row + [ans]}
   end
 
+  def to_verilog
+    positive = input_matrix.select {|x| x.last }
+    id_count = 0
+    ands = positive.map do |row|
+      id_count += 1
+      args = row.zip(vars).map {|bool, var| bool ? var : "not#{var}"} 
+      "and o#{id_count}(w#{id_count}, #{args.join ", "});"
+    end
+
+    wires = (1..id_count).map {|id| "w#{id}"} + vars.map {|x| "not#{x}"}
+
+    big_or = "or o1(out, #{wires.join ", "});"
+
+    nots = vars.map {|x| "not n#{x}(not#{x}, #{x});" }
+
+    "module test(output, #{vars.join ", "});
+  output out;
+  input #{vars.join ", "};
+
+  wire #{wires.join ", "};
+
+  #{nots.join "\n  "} 
+
+  #{ands.join "\n  "}
+
+  #{big_or}
+endmodule"
+  end
+
+
 
 end
-loop do
-	equation = gets.gsub("+", "|").gsub("*", "&")
 
-  circ = Circuit.new equation
+  circ = Circuit.new "a * b + !c"
   p circ.boolean_matrix
   puts circ.vars.join(" | ")
   circ.boolean_matrix.each do |row|
     puts row.map {|x| x ? 1 : 0}.join " | "
   end
 
-end
-
+  puts circ.to_verilog
